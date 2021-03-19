@@ -50,6 +50,8 @@
          id-int ((conf config :hash->int) id)]
      {:host host
       :id id
+      :predecessor nil
+      :successor nil
       :finger-table (finger-table id-int (conf config :hash-bits))})))
 
 (defn between?
@@ -83,3 +85,10 @@
       node-succ
       (-> (closest-preceding-node node id config)
           (recur-succ id config)))))
+
+(defn join
+  "Make one node join another node's Chord ring"
+  [node node0 recur-succ config]
+  (assoc node
+         :predecessor nil
+         :successor (successor node0 (:id node) recur-succ config)))

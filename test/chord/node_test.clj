@@ -49,3 +49,10 @@
     (is (= "3" (succ n3 "3")))
     (is (= "0" (succ n3 "7")))
     (is (= "1" (succ n3 "1")))))
+
+(deftest joining
+  (let [n0 (init "0" config)
+        nj0 (with-node-info n0 [n0]) ;; as if n0 is the only available node so far
+        n1 (init "1" config)
+        nj1 (join n1 nj0 #() config)]
+    (is (= "0" (get-in nj1 [:successor :host])))))
