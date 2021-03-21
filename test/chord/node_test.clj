@@ -56,3 +56,16 @@
         n1 (init "1" config)
         nj1 (join n1 nj0 #() config)]
     (is (= "0" (get-in nj1 [:successor :host])))))
+
+(deftest stabilization
+  (testing "without existing predecessor"
+    (let [n0 (init "0" config)]
+      (is (= n0 (stabilize n0 (fn [succ node] ()) config)))))
+  (testing "with successor that should lead to stabilization"
+    (let [n0 (init "0" config)
+          n0p (assoc n0 :successor {:host "3" :id "3" :predecessor {:host "2" :id "2"}})]
+      (is (= "2" (get-in (stabilize n0p (fn [succ node] ()) config) [:successor :host])))))
+  (testing "with successor that should not lead to stabilization"
+    (let [n0 (init "0" config)
+          n0p (assoc n0 :successor {:host "3" :id "3" :predecessor {:host "0" :id "0"}})]
+      (is (= "3" (get-in (stabilize n0p (fn [succ node] ()) config) [:successor :host]))))))

@@ -92,3 +92,19 @@
   (assoc node
          :predecessor nil
          :successor (successor node0 (:id node) recur-succ config)))
+
+(defn stabilize
+  "Verify the node's immediate successor
+  and tell the successor about n. Should be
+  called periodically."
+  [node notify config]
+  (let [successor (:successor node)
+        predecessor (:predecessor successor)
+        id-int ((:hash->int config) (:id node))]
+    (-> (if (and
+             (not (nil? predecessor))
+             (between? (inc id-int) (dec ((:hash->int config) (:id successor))) ((:hash->int config) (:id predecessor))))
+          (assoc node :successor predecessor) ;; TO DO: here, the new successor will likely not have predecessor info
+        (#(do
+            (notify (:successor %) %)
+            %)))))
