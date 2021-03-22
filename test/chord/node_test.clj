@@ -69,3 +69,17 @@
     (let [n0 (init "0" config)
           n0p (assoc n0 :successor {:host "3" :id "3" :predecessor {:host "0" :id "0"}})]
       (is (= "3" (get-in (stabilize n0p (fn [succ node] ()) config) [:successor :host]))))))
+
+(deftest notifying
+  (testing "predecessor is nil"
+    (let [n0 (init "0" config)
+          n1 (init "1" config)]
+      (is (= "1" (get-in (notify n0 n1 config) [:predecessor :host])))))
+  (testing "with new predecessor"
+    (let [n0 (assoc (init "0" config) :predecessor {:host "2" :id "2"})
+          n3 (init "3" config)]
+      (is (= "3" (get-in (notify n0 n3 config) [:predecessor :host])))))
+  (testing "with same predecessor"
+    (let [n0 (assoc (init "0" config) :predecessor {:host "2" :id "2"})
+          n1 (init "1" config)]
+      (is (= "2" (get-in (notify n0 n1 config) [:predecessor :host]))))))

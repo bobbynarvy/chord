@@ -105,6 +105,20 @@
              (not (nil? predecessor))
              (between? (inc id-int) (dec ((:hash->int config) (:id successor))) ((:hash->int config) (:id predecessor))))
           (assoc node :successor predecessor) ;; TO DO: here, the new successor will likely not have predecessor info
+          node)
         (#(do
             (notify (:successor %) %)
             %)))))
+
+(defn notify
+  "Notify node that node0 might be its predecessor"
+  [node node0 config]
+  (let [hash->int (:hash->int config)]
+    (if (or
+         (nil? (:predecessor node))
+         (between?
+          (inc (hash->int (get-in node [:predecessor :id])))
+          (dec (hash->int (:id node)))
+          (hash->int (:id node0))))
+      (assoc node :predecessor node0)
+      node)))
