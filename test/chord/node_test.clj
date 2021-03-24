@@ -3,8 +3,7 @@
             [chord.node :refer :all]))
 
 (def config {:hash-fn identity
-             :hash-bits 3
-             :hash->int #(Integer/parseInt %)})
+             :hash-bits 3})
 
 (deftest initialize
   (let [node (init "3" config)]
@@ -19,7 +18,7 @@
   "Find the node of a finger"
   [finger nodes]
   ;; Find the first node that is >= finger start
-  (-> (filter #(<= (:start finger) ((:hash->int config) (:id %))) nodes)
+  (-> (filter #(<= (hash->int (:start finger)) (hash->int (:id %))) nodes)
       (#(if (empty? %) (first nodes) (first %)))
       (select-keys [:host :id])))
 

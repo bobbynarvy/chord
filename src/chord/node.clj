@@ -9,8 +9,7 @@
 
 (def ^:private default-config
   {:hash-fn digest/sha-1
-   :hash-bits 160
-   :hash->int (fn [hash] (read-string (str "0x" hash)))})
+   :hash-bits 160})
 
 (defn- conf
   [config prop]
@@ -27,32 +26,42 @@
   "Creates an ID for the given host"
   [host hash-fn] (hash-fn host))
 
+(defn hash->int
+  "Converts a hash to an integer"
+  [hash]
+  (read-string (str "0x" hash)))
+
+(defn- int->hex
+  "Converts an integer to hex"
+  [int]
+  (format "%x" int))
+
 (defn- start
-  [id-int k hash-bits]
+  [id k hash-bits]
   (-> (Math/pow 2 (dec k))
-      (+ id-int)
+      (+ (hash->int id))
       (mod (pow 2 hash-bits))
-      (bigint)))
+      (biginteger)
+      (int->hex)))
 
 (defn- finger
-  [id-int k hash-bits]
-  {:start (start id-int k hash-bits)
+  [id k hash-bits]
+  {:start (start id k hash-bits)
    :node nil})
 
 (defn- finger-table
-  [id-int hash-bits]
-  (map (fn [k] (finger id-int k hash-bits)) (range 1 (inc hash-bits))))
+  [id hash-bits]
+  (map (fn [k] (finger id k hash-bits)) (range 1 (inc hash-bits))))
 
 (defn init
   ([host] (init host {}))
   ([host config]
-   (let [id (id host (conf config :hash-fn))
-         id-int ((conf config :hash->int) id)]
+   (let [id (id host (conf config :hash-fn))]
      {:host host
       :id id
       :predecessor nil
       :successor nil
-      :finger-table (finger-table id-int (conf config :hash-bits))})))
+      :finger-table (finger-table id (conf config :hash-bits))})))
 
 (defn between?
   "Checks if a key k is in the closed interval [a, b]"
@@ -66,8 +75,7 @@
   predecessor of id"
   [node id config]
   (loop [i (dec (:hash-bits config))]
-    (let [hash->int (:hash->int config)
-          id-int (hash->int (:id node))
+    (let [id-int (hash->int (:id node))
           finger-i (nth (:finger-table node) i)
           finger-i-node (:node finger-i)]
       (if (between? (inc id-int) (dec (hash->int id)) (hash->int (:id finger-i-node)))
@@ -79,8 +87,7 @@
 (defn successor
   "Ask a node to find the successor of id"
   [node id recur-succ config]
-  (let [hash->int (:hash->int config)
-        node-succ (:successor node)]
+  (let [node-succ (:successor node)]
     (if (between? (inc (hash->int (:id node))) (hash->int (:id node-succ)) (hash->int id))
       node-succ
       (-> (closest-preceding-node node id config)
@@ -100,10 +107,10 @@
   [node notify config]
   (let [successor (:successor node)
         predecessor (:predecessor successor)
-        id-int ((:hash->int config) (:id node))]
+        id-int (hash->int (:id node))]
     (-> (if (and
              (not (nil? predecessor))
-             (between? (inc id-int) (dec ((:hash->int config) (:id successor))) ((:hash->int config) (:id predecessor))))
+             (between? (inc id-int) (dec (hash->int (:id successor))) (hash->int (:id predecessor))))
           (assoc node :successor predecessor) ;; TO DO: here, the new successor will likely not have predecessor info
           node)
         (#(do
@@ -113,12 +120,11 @@
 (defn notify
   "Notify node that node0 might be its predecessor"
   [node node0 config]
-  (let [hash->int (:hash->int config)]
-    (if (or
-         (nil? (:predecessor node))
-         (between?
-          (inc (hash->int (get-in node [:predecessor :id])))
-          (dec (hash->int (:id node)))
-          (hash->int (:id node0))))
-      (assoc node :predecessor node0)
-      node)))
+  (if (or
+       (nil? (:predecessor node))
+       (between?
+        (inc (hash->int (get-in node [:predecessor :id])))
+        (dec (hash->int (:id node)))
+        (hash->int (:id node0))))
+    (assoc node :predecessor node0)
+    node))
