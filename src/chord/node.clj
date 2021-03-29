@@ -86,12 +86,14 @@
 
 (defn successor
   "Ask a node to find the successor of id"
-  [node id recur-succ config]
-  (let [node-succ (:successor node)]
-    (if (between? (inc (hash->int (:id node))) (hash->int (:id node-succ)) (hash->int id))
-      node-succ
-      (-> (closest-preceding-node node id config)
-          (recur-succ id config)))))
+  ([node id recur-succ config]
+   (let [node-succ (:successor node)]
+     (if (between? (inc (hash->int (:id node))) (hash->int (:id node-succ)) (hash->int id))
+       node-succ
+       (-> (closest-preceding-node node id config)
+           (recur-succ id config)))))
+  ([node id recur-succ]
+   (successor node id recur-succ default-config)))
 
 (defn join
   "Make one node join another node's Chord ring"
@@ -128,3 +130,8 @@
         (hash->int (:id node0))))
     (assoc node :predecessor node0)
     node))
+
+(defn fix_fingers
+  "Refresh a finger table entry"
+  [node i succ-fn config]
+  (update-in node [:finger-table i :node] #(succ-fn node % config))) ;; Figure out how to get hash of finger start
