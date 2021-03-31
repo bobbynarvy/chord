@@ -2,11 +2,11 @@
   (:require [clojure.test :refer :all]
             [chord.node :refer :all]))
 
-(def config {:hash-fn identity
+(def config {:hash-fn (fn [host port] host)
              :hash-bits 3})
 
 (deftest initialize
-  (let [node (init "3" config)]
+  (let [node (init "3" 8888 config)]
     (is (= "3" (:host node)))
     (is (= "3" (:id node)))))
 
@@ -36,7 +36,7 @@
       (successor node id (recur-succ nodes) config))))
 
 (deftest find-successor
-  (let [nodes [(init "0" config) (init "1" config) (init "3" config)]
+  (let [nodes [(init "0" 8888 config) (init "1" 8888 config) (init "3" 8888 config)]
         [n0 n1 n3 :as nodes0] (map #(with-node-info % nodes) nodes)
         recur-fn (recur-succ nodes0)
         succ (fn [node id] (:host (successor node id recur-fn config)))]
@@ -50,35 +50,35 @@
     (is (= "1" (succ n3 "1")))))
 
 (deftest joining
-  (let [n0 (init "0" config)
+  (let [n0 (init "0" 8888 config)
         nj0 (with-node-info n0 [n0]) ;; as if n0 is the only available node so far
-        n1 (init "1" config)
+        n1 (init "1" 8888 config)
         nj1 (join n1 nj0 #() config)]
     (is (= "0" (get-in nj1 [:successor :host])))))
 
 (deftest stabilization
   (testing "without existing predecessor"
-    (let [n0 (init "0" config)]
+    (let [n0 (init "0" 8888 config)]
       (is (= n0 (stabilize n0 (fn [succ node] ()) config)))))
   (testing "with successor that should lead to stabilization"
-    (let [n0 (init "0" config)
+    (let [n0 (init "0" 8888 config)
           n0p (assoc n0 :successor {:host "3" :id "3" :predecessor {:host "2" :id "2"}})]
       (is (= "2" (get-in (stabilize n0p (fn [succ node] ()) config) [:successor :host])))))
   (testing "with successor that should not lead to stabilization"
-    (let [n0 (init "0" config)
+    (let [n0 (init "0" 8888 config)
           n0p (assoc n0 :successor {:host "3" :id "3" :predecessor {:host "0" :id "0"}})]
       (is (= "3" (get-in (stabilize n0p (fn [succ node] ()) config) [:successor :host]))))))
 
 (deftest notifying
   (testing "predecessor is nil"
-    (let [n0 (init "0" config)
-          n1 (init "1" config)]
+    (let [n0 (init "0" 8888 config)
+          n1 (init "1" 8888 config)]
       (is (= "1" (get-in (notify n0 n1 config) [:predecessor :host])))))
   (testing "with new predecessor"
-    (let [n0 (assoc (init "0" config) :predecessor {:host "2" :id "2"})
-          n3 (init "3" config)]
+    (let [n0 (assoc (init "0" 8888 config) :predecessor {:host "2" :id "2"})
+          n3 (init "3" 8888 config)]
       (is (= "3" (get-in (notify n0 n3 config) [:predecessor :host])))))
   (testing "with same predecessor"
-    (let [n0 (assoc (init "0" config) :predecessor {:host "2" :id "2"})
-          n1 (init "1" config)]
+    (let [n0 (assoc (init "0" 8888 config) :predecessor {:host "2" :id "2"})
+          n1 (init "1" 8888 config)]
       (is (= "2" (get-in (notify n0 n1 config) [:predecessor :host]))))))

@@ -2,13 +2,8 @@
   (:gen-class)
   (:require [digest]))
 
-(def state (atom {:id nil
-                  :host nil
-                  :successor nil
-                  :predecessor nil}))
-
 (def ^:private default-config
-  {:hash-fn digest/sha-1
+  {:hash-fn (fn [host port] (digest/sha-1 (str host ":" port)))
    :hash-bits 160})
 
 (defn- conf
@@ -24,7 +19,7 @@
 
 (defn- id
   "Creates an ID for the given host"
-  [host hash-fn] (hash-fn host))
+  [host port hash-fn] (hash-fn host port))
 
 (defn hash->int
   "Converts a hash to an integer"
@@ -54,9 +49,9 @@
   (map (fn [k] (finger id k hash-bits)) (range 1 (inc hash-bits))))
 
 (defn init
-  ([host] (init host {}))
-  ([host config]
-   (let [id (id host (conf config :hash-fn))]
+  ([host port] (init host port {}))
+  ([host port config]
+   (let [id (id host port (conf config :hash-fn))]
      {:host host
       :id id
       :predecessor nil
