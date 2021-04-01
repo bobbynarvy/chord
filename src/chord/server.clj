@@ -22,9 +22,10 @@
   (let [[id] args]
     (-> (n/successor node id
                      (fn [pred-node id _]
-                       (println "Passing request to node")
-                       (c/get (c/client (:host pred-node) "port") id)))
-        (:id))))
+                       (let [host (:host pred-node)
+                             port (:port pred-node)]
+                         (println (str "Successor lookup in node" host ":" port))
+                         (c/get (:host pred-node) (:port pred-node) id)))))))
 
 (defn- handle
   [msg-in node]
@@ -32,28 +33,31 @@
   (let [payload (string/split msg-in #" ")
         request (first payload)
         args (rest payload)
-        node @node]
-    (case (-> request)
-      "GET" (successor node args)
-      "JOIN"
-      "NOTIFY"
-      "ERROR")))
+        n @node]
+    (-> (case request
+          ;; "GET" "hello man"
+          "GET" (successor n args)
+          "JOIN"
+          "NOTIFY"
+          "ERROR")
+        (str))))
 
-(defn- start-periodic-tasks
-  [node]
-  ())
+;; (defn- start-periodic-tasks
+;;   [node]
+;;   ())
 
 (defn serve-persistent [host port]
   (let [running (atom true)
-        node (atom (n/init (str host ":" port)))]
+        node (atom (n/init host port))]
     ;; (start-periodic-tasks)
     (future
-      (println "serving")
+      (println (str "Serving at " port))
       (with-open [server-sock (ServerSocket. port)]
         (while @running
           (with-open [sock (.accept server-sock)]
             (let [msg-in (receive sock)
                   msg-out (handle msg-in node)]
               (println (str "Response:" msg-out))
-              (send-msg sock msg-out))))))
+              (send-msg sock msg-out)))))
+      (println "Server closing..."))
     running))

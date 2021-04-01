@@ -3,26 +3,23 @@
   (:import [java.io StringWriter]
            [java.net Socket]))
 
-(defn client
-  [host port]
-  (fn [msg]
-    (with-open [sock (Socket. host port)
-                writer (io/writer sock)
-                reader (io/reader sock)
-                response (StringWriter.)]
-      (println (str "REQ " host ":" port " -> " msg))
-      (.append writer msg)
-      (.flush writer)
-      (-> (.readLine reader)
-          (println)
-          (identity)))))
+(defn send-request
+  [host port msg]
+  (with-open [sock (Socket. host port)
+              writer (io/writer sock)
+              reader (io/reader sock)
+              response (StringWriter.)]
+    (.append writer (str msg "\n"))
+    (.flush writer)
+    (io/copy reader response)
+    (read-string (str response))))
 
 (defn get
   "Get the node of id"
-  [client id]
-  (client (str "GET " id)))
+  [host port id]
+  (send-request host port (str "GET " id)))
 
-(defn join
-  "Join another node's Chord ring"
-  []
-  (println "hello"))
+;; (defn join
+;;   "Join another node's Chord ring"
+;;   []
+;;   (println "hello"))

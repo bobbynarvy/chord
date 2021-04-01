@@ -53,9 +53,12 @@
   ([host port config]
    (let [id (id host port (conf config :hash-fn))]
      {:host host
+      :port port
       :id id
       :predecessor nil
-      :successor nil
+      :successor {:host host
+                  :port port
+                  :id id}
       :finger-table (finger-table id (conf config :hash-bits))})))
 
 (defn between?
