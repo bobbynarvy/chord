@@ -95,12 +95,11 @@
 
 (defn join
   "Make one node join another node's Chord ring"
-  ([node peer-node successor-fn config]
-   (assoc node
-          :predecessor nil
-          :successor (successor-fn peer-node (:id node))))
-  ([node peer-node successor-fn]
-   (join node peer-node successor-fn default-config)))
+  ([node peer-successor-fn config]
+   {:predecessor nil
+    :successor (peer-successor-fn (:id node))})
+  ([node peer-successor-fn]
+   (join node peer-successor-fn default-config)))
 
 (defn stabilize
   "Verify the node's immediate successor

@@ -18,14 +18,18 @@
     (.flush writer)))
 
 (defn- successor
-  [node args]
-  (let [[id] args]
-    (-> (n/successor node id
-                     (fn [pred-node id _]
-                       (let [host (:host pred-node)
-                             port (:port pred-node)]
-                         (println (str "Successor lookup in node" host ":" port))
-                         (c/get (:host pred-node) (:port pred-node) id)))))))
+  [node [id]]
+  (n/successor node id
+               (fn [pred-node id _]
+                 (let [host (:host pred-node)
+                       port (:port pred-node)]
+                   (println (str "Successor lookup in node" host ":" port))
+                   (c/get (:host pred-node) (:port pred-node) id)))))
+
+(defn- join
+  [node [peer-host peer-port]]
+  (swap! node into (n/join @node #(c/get peer-host (Integer. peer-port) %)))
+  {:join :ok})
 
 (defn- handle
   [msg-in node]
@@ -35,9 +39,8 @@
         args (rest payload)
         n @node]
     (-> (case request
-          ;; "GET" "hello man"
           "GET" (successor n args)
-          "JOIN"
+          "JOIN" (join node args)
           "NOTIFY"
           "ERROR")
         (str))))

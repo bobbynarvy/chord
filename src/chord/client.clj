@@ -19,7 +19,7 @@
   [host port id]
   (send-request host port (str "GET " id)))
 
-;; (defn join
-;;   "Join another node's Chord ring"
-;;   []
-;;   (println "hello"))
+(defn join
+  "Join another node's Chord ring"
+  [host port peer-host peer-port]
+  (send-request host port (str "JOIN " peer-host " " peer-port)))
