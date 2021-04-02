@@ -53,7 +53,7 @@
   (let [n0 (init "0" 8888 config)
         nj0 (with-node-info n0 [n0]) ;; as if n0 is the only available node so far
         n1 (init "1" 8888 config)
-        nj1 (join n1 nj0 #() config)]
+        nj1 (join n1 nj0 (fn [_ _] nj0))]
     (is (= "0" (get-in nj1 [:successor :host])))))
 
 (deftest stabilization

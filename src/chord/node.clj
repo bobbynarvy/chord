@@ -95,10 +95,12 @@
 
 (defn join
   "Make one node join another node's Chord ring"
-  [node node0 recur-succ config]
-  (assoc node
-         :predecessor nil
-         :successor (successor node0 (:id node) recur-succ config)))
+  ([node peer-node successor-fn config]
+   (assoc node
+          :predecessor nil
+          :successor (successor-fn peer-node (:id node))))
+  ([node peer-node successor-fn]
+   (join node peer-node successor-fn default-config)))
 
 (defn stabilize
   "Verify the node's immediate successor
@@ -118,15 +120,15 @@
             %)))))
 
 (defn notify
-  "Notify node that node0 might be its predecessor"
-  [node node0 config]
+  "Notify node that peer-node might be its predecessor"
+  [node peer-node config]
   (if (or
        (nil? (:predecessor node))
        (between?
         (inc (hash->int (get-in node [:predecessor :id])))
         (dec (hash->int (:id node)))
-        (hash->int (:id node0))))
-    (assoc node :predecessor node0)
+        (hash->int (:id peer-node))))
+    (assoc node :predecessor peer-node)
     node))
 
 (defn fix_fingers
