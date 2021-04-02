@@ -23,3 +23,9 @@
   "Join another node's Chord ring"
   [host port peer-host peer-port]
   (send-request host port (str "JOIN " peer-host " " peer-port)))
+
+(defn notify
+  "Notify a node that it might need to have a
+  different predecessor"
+  [host port peer-host peer-port peer-id]
+  (send-request host port (str "NOTIFY " peer-host " " peer-port " " peer-id)))

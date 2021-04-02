@@ -119,16 +119,17 @@
             %)))))
 
 (defn notify
-  "Notify node that peer-node might be its predecessor"
-  [node peer-node config]
+  "Notify node that peer-node might be its predecessor.
+  Returns the appropriate predecessor."
+  [node peer-node]
   (if (or
        (nil? (:predecessor node))
        (between?
         (inc (hash->int (get-in node [:predecessor :id])))
         (dec (hash->int (:id node)))
         (hash->int (:id peer-node))))
-    (assoc node :predecessor peer-node)
-    node))
+    peer-node
+    (:predecessor node)))
 
 (defn fix_fingers
   "Refresh a finger table entry"

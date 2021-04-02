@@ -31,6 +31,13 @@
   (swap! node into (n/join @node #(c/get peer-host (Integer. peer-port) %)))
   {:join :ok})
 
+(defn- notify
+  [node [peer-host peer-port peer-id]]
+  (swap! node assoc :predecessor (n/notify @node {:host peer-host
+                                                  :port (Integer. peer-port)
+                                                  :id peer-id}))
+  {:notify :ok})
+
 (defn- handle
   [msg-in node]
   (println (str "Request: " msg-in))
@@ -41,7 +48,7 @@
     (-> (case request
           "GET" (successor n args)
           "JOIN" (join node args)
-          "NOTIFY"
+          "NOTIFY" (notify node args)
           "ERROR")
         (str))))
 

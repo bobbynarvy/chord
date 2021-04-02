@@ -73,12 +73,12 @@
   (testing "predecessor is nil"
     (let [n0 (init "0" 8888 config)
           n1 (init "1" 8888 config)]
-      (is (= "1" (get-in (notify n0 n1 config) [:predecessor :host])))))
+      (is (= "1" (:host (notify n0 n1))))))
   (testing "with new predecessor"
     (let [n0 (assoc (init "0" 8888 config) :predecessor {:host "2" :id "2"})
           n3 (init "3" 8888 config)]
-      (is (= "3" (get-in (notify n0 n3 config) [:predecessor :host])))))
+      (is (= "3" (:host (notify n0 n3))))))
   (testing "with same predecessor"
     (let [n0 (assoc (init "0" 8888 config) :predecessor {:host "2" :id "2"})
           n1 (init "1" 8888 config)]
-      (is (= "2" (get-in (notify n0 n1 config) [:predecessor :host]))))))
+      (is (= "2" (:host (notify n0 n1)))))))
