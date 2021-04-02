@@ -29,3 +29,8 @@
   different predecessor"
   [host port peer-host peer-port peer-id]
   (send-request host port (str "NOTIFY " peer-host " " peer-port " " peer-id)))
+
+(defn info
+  "Get info about a node"
+  [host port]
+  (send-request host port "INFO"))

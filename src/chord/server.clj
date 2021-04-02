@@ -43,12 +43,12 @@
   (println (str "Request: " msg-in))
   (let [payload (string/split msg-in #" ")
         request (first payload)
-        args (rest payload)
-        n @node]
+        args (rest payload)]
     (-> (case request
-          "GET" (successor n args)
+          "GET" (successor @node args)
           "JOIN" (join node args)
           "NOTIFY" (notify node args)
+          "INFO" (select-keys @node [:host :port :id :successor :predecessor])
           "ERROR")
         (str))))
 
