@@ -104,18 +104,19 @@
 (defn stabilize
   "Verify the node's immediate successor
   and tell the successor about n. Should be
-  called periodically."
-  [node notify config]
+  called periodically. Returns the appropriate
+  successor."
+  [node get-predecessor notify]
   (let [successor (:successor node)
-        predecessor (:predecessor successor)
+        predecessor (get-predecessor successor)
         id-int (hash->int (:id node))]
     (-> (if (and
              (not (nil? predecessor))
              (between? (inc id-int) (dec (hash->int (:id successor))) (hash->int (:id predecessor))))
-          (assoc node :successor predecessor) ;; TO DO: here, the new successor will likely not have predecessor info
-          node)
+          (select-keys predecessor [:host :port :id])
+          (:successor node))
         (#(do
-            (notify (:successor %) %)
+            (notify % node)
             %)))))
 
 (defn notify
