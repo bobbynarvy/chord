@@ -3,7 +3,7 @@
             [clojure.string :as string]
             [chord.node :as n]
             [chord.client :as c])
-  (:import [java.net ServerSocket]))
+  (:import [java.net ServerSocket Socket]))
 
 (defn- receive
   "Read a line of textual data from the given socket"
@@ -52,22 +52,40 @@
           "ERROR")
         (str))))
 
-;; (defn- start-periodic-tasks
-;;   [node]
-;;   ())
-
-(defn serve-persistent [host port]
-  (let [running (atom true)
-        node (atom (n/init host port))]
-    ;; (start-periodic-tasks)
-    (future
+(defn- start-server
+  [node port running?]
+  (future
+    (with-open [server-sock (ServerSocket. port)]
       (println (str "Serving at " port))
-      (with-open [server-sock (ServerSocket. port)]
-        (while @running
-          (with-open [sock (.accept server-sock)]
-            (let [msg-in (receive sock)
-                  msg-out (handle msg-in node)]
-              (println (str "Response:" msg-out))
-              (send-msg sock msg-out)))))
-      (println "Server closing..."))
-    running))
+      (while @running?
+        (with-open [sock (.accept server-sock)]
+          (let [msg-in (receive sock)
+                msg-out (handle msg-in node)]
+            (println (str "Response: " msg-out))
+            (send-msg sock msg-out)))))
+    (println "Server closing...")))
+
+(defn- start-stabilization
+  [node running?]
+  (future
+    (while @running?
+      (-> (n/stabilize @node
+                       (fn [succ]
+                         (let [info (c/info (:host succ) (:port succ))]
+                           (:predecessor info)))
+                       (fn [{succ-host :host succ-port :port}
+                            {node-host :host node-port :port node-id :id}]
+                         (c/notify succ-host succ-port node-host node-port node-id)))
+          ((fn [succ]
+             (when (not= (:id @node) (:id succ))
+               (println "Stabilizing with new successor: " (str (:host succ) ":" (:port succ)))
+               (swap! node assoc :successor succ)))))
+      (Thread/sleep 8000))))
+
+(defn start [host port]
+  (let [running? (atom true)
+        node (atom (n/init host port))]
+    (start-server node port running?)
+    (Thread/sleep 1000) ;; Wait for server to start. TO DO: Improve this.
+    (start-stabilization node running?)
+    running?))
