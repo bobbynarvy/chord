@@ -6,8 +6,10 @@
             [taoensso.timbre :as timbre :refer [info debug]])
   (:import [java.net ServerSocket Socket]))
 
-(timbre/set-level! (or (keyword (System/getenv "LOG_LEVEL"))
-                       :debug))
+(timbre/set-level! (let [log-level (keyword (System/getenv "LOG_LEVEL"))]
+                     (if (some #(= log-level %) [:debug :info])
+                       log-level
+                       :debug)))
 
 (defn- receive
   "Read a line of textual data from the given socket"

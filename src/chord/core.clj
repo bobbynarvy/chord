@@ -1,7 +1,10 @@
 (ns chord.core
-  (:gen-class))
+  (:gen-class)
+  (:require [chord.server :as server]))
 
-(defn run
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
+(defn -main [& args]
+  (let [[port host] args
+        hostname (or host "localhost")]
+    (when (nil? port)
+      (throw (Exception. "Port is not specified.")))
+    (server/start hostname (Integer. port))))
