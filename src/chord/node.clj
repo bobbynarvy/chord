@@ -12,11 +12,6 @@
     p
     (prop default-config)))
 
-(defn- pow [b e]
-  (-> (bigdec 2)
-      (.pow e)
-      (bigint)))
-
 (defn- id
   "Creates an ID for the given host"
   [host port hash-fn] (hash-fn host port))
@@ -24,26 +19,25 @@
 (defn hash->int
   "Converts a hash to an integer"
   [hash]
-  (read-string (str "0x" hash)))
+  (bigint (read-string (str "0x" hash))))
 
 (defn- int->hex
   "Converts an integer to hex"
   [int]
-  (format "%x" int))
+  (format "%x" (biginteger int)))
 
 (defn- start
   [id k hash-bits]
-  (-> (Math/pow 2 (dec k))
+  (-> (bigint (Math/pow 2 (dec k)))
       (+ (hash->int id))
-      (mod (pow 2 hash-bits))
-      (biginteger)
+      (mod (bigint (Math/pow 2 hash-bits)))
       (int->hex)))
 
 (defn- finger-table
   [id hash-bits node]
-  (map (fn [k] {:start (start id k hash-bits)
-                :node node})
-       (range 1 (inc hash-bits))))
+  (vec (map (fn [k] {:start (start id k hash-bits)
+                     :node node})
+            (range 1 (inc hash-bits)))))
 
 (defn init
   ([host port] (init host port {}))
@@ -126,7 +120,8 @@
     peer-node
     (:predecessor node)))
 
-(defn fix_fingers
-  "Refresh a finger table entry"
-  [node i succ-fn config]
-  (update-in node [:finger-table i :node] #(succ-fn node % config))) ;; Figure out how to get hash of finger start
+(defn fix-fingers
+  "Refresh a finger table entry.
+  Returns the appropriate finger node."
+  [node i succ-fn]
+  (succ-fn (get-in node [:finger-table i :start])))

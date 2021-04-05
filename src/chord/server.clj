@@ -90,7 +90,17 @@
                (swap! node assoc :successor succ)))))
       (Thread/sleep 8000))))
 
-;; (defn- start-fix-fingers)
+(defn- start-fix-fingers
+  [node running?]
+  (future
+    (loop [i 0]
+      (-> (n/fix-fingers @node i (fn [id] (successor @node id)))
+          ((fn [succ]
+             (when (not= (get-in @node [:finger-table i :node :id]) (:id succ))
+               (info (str "Updating finger at index " i " to node at: " (:host succ) ":" (:port succ)))
+               (swap! node assoc-in [:finger-table i :node] succ)))))
+      (Thread/sleep 1000)
+      (when @running? (recur (if (= i 159) 0 (inc i)))))))
 
 (defn start [host port]
   (let [running? (atom true)
@@ -98,4 +108,5 @@
     (start-server node port running?)
     (Thread/sleep 1000) ;; Wait for server to start. TO DO: Improve this.
     (start-stabilization node running?)
+    (start-fix-fingers node running?)
     running?))
