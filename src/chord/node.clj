@@ -39,27 +39,20 @@
       (biginteger)
       (int->hex)))
 
-(defn- finger
-  [id k hash-bits]
-  {:start (start id k hash-bits)
-   :node nil})
-
 (defn- finger-table
-  [id hash-bits]
-  (map (fn [k] (finger id k hash-bits)) (range 1 (inc hash-bits))))
+  [id hash-bits node]
+  (map (fn [k] {:start (start id k hash-bits)
+                :node node})
+       (range 1 (inc hash-bits))))
 
 (defn init
   ([host port] (init host port {}))
   ([host port config]
-   (let [id (id host port (conf config :hash-fn))]
-     {:host host
-      :port port
-      :id id
-      :predecessor nil
-      :successor {:host host
-                  :port port
-                  :id id}
-      :finger-table (finger-table id (conf config :hash-bits))})))
+   (let [id (id host port (conf config :hash-fn))
+         node {:host host :port port :id id}]
+     (merge node {:predecessor nil
+                  :successor node
+                  :finger-table (finger-table id (conf config :hash-bits) node)}))))
 
 (defn between?
   "Checks if a key k is in the closed interval [a, b]"
