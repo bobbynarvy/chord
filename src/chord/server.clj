@@ -2,8 +2,12 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [chord.node :as n]
-            [chord.client :as c])
+            [chord.client :as c]
+            [taoensso.timbre :as timbre :refer [info debug]])
   (:import [java.net ServerSocket Socket]))
+
+(timbre/set-level! (or (keyword (System/getenv "LOG_LEVEL"))
+                       :debug))
 
 (defn- receive
   "Read a line of textual data from the given socket"
@@ -24,7 +28,7 @@
                  (if (= (:id node) p-id)
                    node
                    (do
-                     (println (str "Successor lookup in node: " host ":" port))
+                     (info (str "Successor lookup in node: " host ":" port))
                      (c/get host port id))))))
 
 (defn- join
@@ -38,13 +42,13 @@
                               :port (Integer. peer-port)
                               :id peer-id})]
     (when (not= (get-in @node [:predecessor :id]) (:id pred))
-      (println "Assigning new predecessor: " (str (:host pred) ":" (:port pred)))
+      (info "Assigning new predecessor: " (str (:host pred) ":" (:port pred)))
       (swap! node assoc :predecessor pred)))
   {:notify :ok})
 
 (defn- handle
   [msg-in node]
-  (println (str "Request: " msg-in))
+  (debug (str "Request: " msg-in))
   (let [payload (string/split msg-in #" ")
         request (first payload)
         args (rest payload)]
@@ -60,14 +64,14 @@
   [node port running?]
   (future
     (with-open [server-sock (ServerSocket. port)]
-      (println (str "Serving at " port))
+      (info (str "Serving at " port))
       (while @running?
         (with-open [sock (.accept server-sock)]
           (let [msg-in (receive sock)
                 msg-out (handle msg-in node)]
-            (println (str "Response: " msg-out))
+            (debug (str "Response: " msg-out))
             (send-msg sock msg-out)))))
-    (println "Server closing...")))
+    (info "Server closing...")))
 
 (defn- start-stabilization
   [node running?]
@@ -82,7 +86,7 @@
                          (c/notify succ-host succ-port node-host node-port node-id)))
           ((fn [succ]
              (when (not= (get-in @node [:successor :id]) (:id succ))
-               (println "Stabilizing with new successor: " (str (:host succ) ":" (:port succ)))
+               (info "Stabilizing with new successor: " (str (:host succ) ":" (:port succ)))
                (swap! node assoc :successor succ)))))
       (Thread/sleep 8000))))
 
