@@ -72,17 +72,18 @@
       (if (between? (inc id-int) (dec (hash->int id)) (hash->int (:id finger-i-node)))
         finger-i-node
         (if (= i 0)
-          id-int
+          node
           (recur (dec i)))))))
 
 (defn successor
   "Ask a node to find the successor of id"
   ([node id recur-succ config]
    (let [node-succ (:successor node)]
-     (if (between? (inc (hash->int (:id node))) (hash->int (:id node-succ)) (hash->int id))
-       node-succ
-       (-> (closest-preceding-node node id config)
-           (recur-succ id config)))))
+     (-> (if (between? (inc (hash->int (:id node))) (hash->int (:id node-succ)) (hash->int id))
+           node-succ
+           (-> (closest-preceding-node node id config)
+               (recur-succ id config)))
+         (select-keys [:host :port :id]))))
   ([node id recur-succ]
    (successor node id recur-succ default-config)))
 

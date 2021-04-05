@@ -20,11 +20,12 @@
 (defn- successor
   [node [id]]
   (n/successor node id
-               (fn [pred-node id _]
-                 (let [host (:host pred-node)
-                       port (:port pred-node)]
-                   (println (str "Successor lookup in node" host ":" port))
-                   (c/get (:host pred-node) (:port pred-node) id)))))
+               (fn [{host :host port :port p-id :id} id _]
+                 (if (= (:id node) p-id)
+                   node
+                   (do
+                     (println (str "Successor lookup in node: " host ":" port))
+                     (c/get host port id))))))
 
 (defn- join
   [node [peer-host peer-port]]
@@ -33,9 +34,12 @@
 
 (defn- notify
   [node [peer-host peer-port peer-id]]
-  (swap! node assoc :predecessor (n/notify @node {:host peer-host
-                                                  :port (Integer. peer-port)
-                                                  :id peer-id}))
+  (let [pred (n/notify @node {:host peer-host
+                              :port (Integer. peer-port)
+                              :id peer-id})]
+    (when (not= (get-in @node [:predecessor :id]) (:id pred))
+      (println "Assigning new predecessor: " (str (:host pred) ":" (:port pred)))
+      (swap! node assoc :predecessor pred)))
   {:notify :ok})
 
 (defn- handle
@@ -77,10 +81,12 @@
                             {node-host :host node-port :port node-id :id}]
                          (c/notify succ-host succ-port node-host node-port node-id)))
           ((fn [succ]
-             (when (not= (:id @node) (:id succ))
+             (when (not= (get-in @node [:successor :id]) (:id succ))
                (println "Stabilizing with new successor: " (str (:host succ) ":" (:port succ)))
                (swap! node assoc :successor succ)))))
       (Thread/sleep 8000))))
+
+;; (defn- start-fix-fingers)
 
 (defn start [host port]
   (let [running? (atom true)
