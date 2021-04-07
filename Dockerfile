@@ -1,6 +1,5 @@
 FROM clojure:lein
 
-ENV HOSTNAME localhost
 ENV PORT 8888
 ENV LOG_LEVEL info
 
@@ -13,4 +12,4 @@ RUN lein deps
 COPY . /usr/src/app
 RUN mv "$(lein uberjar | sed -n 's/^Created \(.*standalone\.jar\)/\1/p')" app-standalone.jar
 
-CMD ["sh", "-c", "java -jar app-standalone.jar $PORT $HOSTMANE"]
+CMD ["sh", "-c", "java -jar app-standalone.jar $PORT"]

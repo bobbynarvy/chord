@@ -1,0 +1,18 @@
+services:
+  # Lead service. The same as chord-peer.
+  # Just gets created first so that peers
+  # can have a target node to join to.
+  chord-lead:
+    build: .
+    ports: 
+      - "8888"
+  
+  chord-peer:
+    build: .
+    ports: 
+      - "8888"
+    depends_on:
+      - chord-lead
+    environment:
+      - PEER_HOST=chord-lead
+      - PEER_PORT=8888
