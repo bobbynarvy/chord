@@ -8,7 +8,7 @@
   (let [[port host] args
         hostname (first (filter #(not (nil? %))
                                 [host (System/getenv "HOSTNAME") "localhost"]))
-        local-port (Integer. (first (filter #(not (nil? %))) [port (System/getenv "PORT")]))
+        local-port (Integer. (first (filter #(not (nil? %)) [port (System/getenv "PORT")])))
         peer-host (System/getenv "PEER_HOST")
         peer-port (System/getenv "PEER_PORT")]
     (when (nil? local-port) (throw (Exception. "Port is not specified.")))
